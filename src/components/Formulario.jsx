@@ -15,20 +15,37 @@ const Formulario = () => {
     const [alerta,setAlerta]= useState({})
     const {msg} = alerta;
 
-    const { guardarPacientes,pacientes } = usePacientes()
+    const { guardarPacientes,paciente } = usePacientes()
 
     useEffect(()=>{
 
-        if(pacientes?.nombre){
-            setNombre(pacientes.nombre)
-            setPropietario(pacientes.propietario)
-            setEmail(pacientes.email)
-            setFecha(pacientes.fecha)
-            setSintomas(pacientes.sintomas)
-            setId(pacientes._id)
+        if(paciente?.nombre){
+            setNombre(paciente.nombre)
+            setPropietario(paciente.propietario)
+            setEmail(paciente.email)
+            setFecha(paciente.fecha)
+            if (paciente.fecha) {
+            try {
+            const fechaObj = new Date(paciente.fecha)
+            if (!Number.isNaN(fechaObj.getTime())) {
+                const fechaFormateada = fechaObj.toISOString().split("T")[0] 
+                setFecha(fechaFormateada)
+            } else {
+                setFecha("")
+            }
+            } catch {
+            setFecha("")
+            }
+            
+        } else {
+            setFecha("")
+              setId(null);
+        }
+            setSintomas(paciente.sintomas)
+            setId(paciente._id)
         }
         // console.log('render');
-    },[pacientes])
+    },[paciente])
     // console.log(pacienteE);
 
     // const navigate = useNavigate();
@@ -56,6 +73,7 @@ const Formulario = () => {
         setEmail('')
         setFecha('')
         setSintomas('')
+          setId(null);
     }
     return (
       <>

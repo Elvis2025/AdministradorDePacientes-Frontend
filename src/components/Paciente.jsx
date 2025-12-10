@@ -7,8 +7,20 @@ const Paciente = ({paciente}) => {
 
     const { email,fecha,nombre,propietario, sintomas, _id} = paciente
     const fomatDate = (fecha) => {
-        const nuevaFecha = new Date(fecha)
-        return new Intl.DateTimeFormat('es-DO',{dateStyle: 'long'}).format(nuevaFecha)
+
+         if (!fecha) return "";
+
+        const nuevaFecha = new Date(fecha);
+        if (isNaN(nuevaFecha)) return "";
+
+        return nuevaFecha.toLocaleDateString("es-ES", {
+            year: "numeric",
+            month: "long",
+            day: "2-digit",
+        });
+
+        // const nuevaFecha = new Date(fecha)
+        // return new Intl.DateTimeFormat('es-DO',{dateStyle: 'long'}).format(nuevaFecha)
     }
 
   return (

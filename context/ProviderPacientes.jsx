@@ -1,128 +1,134 @@
-import { createContext,useEffect,useState } from "react";
-// import { useEffectOnce } from "use-effect-once";
+import { createContext, useEffect, useState } from "react";
 import axios from "axios";
-import PropTypes from 'prop-types'
+import PropTypes from "prop-types";
 import useAuth from "../hooks/useAuth";
 
 const PacientesContext = createContext();
 
+const ProviderPacientes = ({ children }) => {
+  const [pacientes, setPacientes] = useState([]);
+  const [paciente, setPaciente] = useState({});
+  const { auth } = useAuth();
 
-const ProviderPacientes = ({children}) => {
-    const [pacientes,setPacientes] = useState([])
-    const [pacienteE,setPacienteE] = useState({})
-    const {auth} = useAuth()
-    const url = `http://localhost:4000/api/pacientes`
-    
-    useEffect(()=>{
-        const obtenerPacientes =async () => {
-            try {
-                const token = localStorage.getItem('token')
-                if(!token){
-                    return
-                }
-                const config = {
-                    headers:{
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
-                    }
-                }
-                const {data} = await axios(url,config)
-                // console.log(data);
-                setPacientes(...pacientes,data)
-                
-                // console.log(pacientes);
-                
-            } catch (error) {
-                console.log(error.response.data.msg);
+  const urlBase = "http://localhost:4000/api/pacientes";
 
-            }
-        }
-        obtenerPacientes();
-    },[auth])
-    const guardarPacientes = async (paciente)=>{
-        // console.log(paciente);
-        const token = localStorage.getItem('token')
-                // console.log(token);
+  useEffect(() => {
+    const obtenerPacientes = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         const config = {
-            headers:{
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            }
-        }
-        if(paciente.id){
-            console.log('editanto a',paciente.id);
-            const url = `http://localhost:4000/api/pacientes/${paciente.id}`
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        };
 
-            try {
-                const {data} = await axios.put(url,paciente,config)
-                console.log(data);
-                const pacienteActualizado = pacientes.map(pacientesState => pacientesState._id === data._id ? data : pacientesState)
-                setPacientes(pacienteActualizado)
-            } catch (error) {
-                console.log(error);
-            }
-        }else{
-            console.log('Nuevo paciente');
-            try {
-                
-                
-                await axios.post(url,paciente,config)
-               
-            } catch (error){ 
-                console.log(error.response.data.msg);
-            }
-        }
+        const { data } = await axios(urlBase, config);
+        setPacientes(data);
+      } catch (error) {
+        console.log(error.response?.data?.msg || error.message);
+      }
+    };
+
+    obtenerPacientes();
+  }, [auth]);
+
+  const guardarPacientes = async (paciente) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    if (paciente.id) {
+      // EDITAR
+      try {
+        const { data } = await axios.put(
+          `${urlBase}/${paciente.id}`,
+          paciente,
+          config
+        );
+        console.log("data seve",data);
+
+        const pacientesActualizados = pacientes.map((pacienteState) =>
+          pacienteState._id === data._id ? data : pacienteState
+        );
+console.log("data after save",data);
+console.log("data after pacientesActualizados",pacientesActualizados);
+        setPacientes(pacientesActualizados);
+        setPaciente({});
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+     try {
+        console.log("Nuevo paciente");
+        const { data } = await axios.post(urlBase, paciente, config);
+        console.log("respuesta backend NUEVO:", data);
         
+        const pacienteNuevo = data.pacienteGuardado ?? data;
+        
+        console.log("respuesta backend pacienteNuevo:", pacienteNuevo);
+        setPacientes(prevPacientes => [pacienteNuevo, ...prevPacientes]);
+      } catch (error) {
+        console.log(error.response?.data?.msg || error.message);
+      }
     }
+  };
 
-    const editar = (idPaciente)=>{
-        console.log('editando a',idPaciente);
-        setPacienteE(idPaciente)
-    }
+  const editar = (paciente) => {
+    setPaciente(paciente);
+  };
 
-    const eliminarPacientes = async (id)=>{
-        const confirmar = confirm('Deseas eliminar este paciente?')
-        const url = `http://localhost:4000/api/pacientes/${id}`
-        const token = localStorage.getItem('token')
-                // console.log(token);
-        const config = {
-            headers:{
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            }
-        }
-        console.log(confirmar);
-        if(confirmar){
-            try {
-                const {data} = await axios.delete(url,config)
-                console.log(data, 'eliminado');
-                const pacientesUpdate = pacientes.filter( pacientesS => pacientesS._id !== id)
-                setPacientes(pacientesUpdate);
-            } catch (error) {
-                console.log(error);
-            }
-        }
+  const eliminarPacientes = async (id) => {
+    
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    try {
+      await axios.delete(`${urlBase}/${id}`, config);
+
+      const pacientesActualizados = pacientes.filter(
+        (pacienteState) => pacienteState._id !== id
+      );
+
+      setPacientes(pacientesActualizados);
+    } catch (error) {
+      console.log(error);
     }
+  };
+
   return (
     <PacientesContext.Provider
-        value={{
-            pacientes,
-            guardarPacientes,
-            editar,
-            pacienteE,
-            eliminarPacientes
-        }}
+      value={{
+        pacientes,
+        guardarPacientes,
+        editar,
+        paciente,
+        eliminarPacientes,
+      }}
     >
-        {children}
+      {children}
     </PacientesContext.Provider>
-  )
-}
+  );
+};
 
-ProviderPacientes.propTypes ={
-    children: PropTypes.any.isRequired,
-}
+ProviderPacientes.propTypes = {
+  children: PropTypes.any.isRequired,
+};
 
-export {
-    ProviderPacientes
-}
-export default PacientesContext
+export { ProviderPacientes };
+export default PacientesContext;
